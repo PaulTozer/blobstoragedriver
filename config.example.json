@@ -1,0 +1,50 @@
+{
+  "AzureBlob": {
+    "AuthType": "EntraIdInteractive",
+    "AccountName": "your-storage-account",
+    "ContainerName": "your-container",
+    "ConnectionString": null,
+    "AccountKey": null,
+    "SasToken": null,
+    "TenantId": null,
+    "ClientId": null,
+    "MaxRetries": 3,
+    "RetryDelaySeconds": 2,
+    "TimeoutSeconds": 60
+  },
+  "Cache": {
+    "LocalSyncFolder": "%USERPROFILE%\\BlobStorage",
+    "MaxCacheSizeBytes": 10737418240,
+    "EvictionThresholdPercent": 80,
+    "KeepAccessedWithinDays": 30,
+    "RespectPinnedFiles": true,
+    "DatabasePath": "%LOCALAPPDATA%\\BlobStorageDriver\\filedb.db"
+  },
+  "Sync": {
+    "SyncIntervalSeconds": 300,
+    "EnableRealTimeSync": true,
+    "FileChangeDelayMs": 1000,
+    "MaxConcurrentUploads": 4,
+    "MaxConcurrentDownloads": 4,
+    "ChunkSizeBytes": 4194304,
+    "ChunkThresholdBytes": 104857600,
+    "DefaultConflictStrategy": "AskUser",
+    "PauseOnMeteredConnection": true,
+    "ExcludePatterns": [
+      "*.tmp",
+      "~$*",
+      ".DS_Store",
+      "Thumbs.db",
+      "desktop.ini",
+      "*.partial"
+    ]
+  },
+  "Ui": {
+    "ShowNotifications": true,
+    "StartMinimized": false,
+    "StartWithWindows": true,
+    "ShowSyncProgressInTray": true,
+    "PlaySoundOnComplete": false,
+    "ShowConflictNotifications": true
+  }
+}
