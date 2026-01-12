@@ -28,6 +28,7 @@ public partial class App : Application
     private TrayIconService? _trayIconService;
     private AppWindow? _appWindow;
     private bool _isExiting;
+    private bool _startMinimized;
     
     public static IServiceProvider Services => ((App)Current)._host!.Services;
     public static Window MainWindow => ((App)Current)._mainWindow!;
@@ -38,6 +39,13 @@ public partial class App : Application
     public App()
     {
         this.InitializeComponent();
+        
+        // Check for --minimized argument
+        var args = Environment.GetCommandLineArgs();
+        _startMinimized = Array.Exists(args, arg => 
+            arg.Equals("--minimized", StringComparison.OrdinalIgnoreCase) ||
+            arg.Equals("-m", StringComparison.OrdinalIgnoreCase) ||
+            arg.Equals("/minimized", StringComparison.OrdinalIgnoreCase));
         
         // Set up global exception handlers
         this.UnhandledException += App_UnhandledException;
@@ -155,7 +163,19 @@ public partial class App : Application
             };
             
             Log.Information("Activating MainWindow...");
-            _mainWindow.Activate();
+            
+            // Start minimized if requested via command line
+            if (_startMinimized)
+            {
+                Log.Information("Starting minimized to system tray");
+                HideMainWindow();
+                _trayIconService?.ShowBalloon("Blob Storage Driver", "Application started in system tray");
+            }
+            else
+            {
+                _mainWindow.Activate();
+            }
+            
             Log.Information("Application launched successfully");
         }
         catch (Exception ex)

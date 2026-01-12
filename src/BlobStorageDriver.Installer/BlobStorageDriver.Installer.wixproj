@@ -1,0 +1,12 @@
+<Project Sdk="WixToolset.Sdk/5.0.0">
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <OutputName>BlobStorageDriverSetup</OutputName>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\BlobStorageDriver.WinUI\BlobStorageDriver.WinUI.csproj" />
+    <ProjectReference Include="..\BlobStorageDriver.Service\BlobStorageDriver.Service.csproj" />
+  </ItemGroup>
+</Project>

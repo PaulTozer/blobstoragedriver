@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package Name="Blob Storage Driver"
+           Manufacturer="BlobStorageDriver"
+           Version="1.0.0.0"
+           UpgradeCode="F1A2B3C4-D5E6-7890-ABCD-EF1234567890"
+           Scope="perMachine">
+
+    <SummaryInformation Description="Blob Storage Driver - Mount Azure Blob Storage as a local file system" />
+
+    <!-- Upgrade handling -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <!-- Include WiX UI extension for dialogs -->
+    <ui:WixUI Id="WixUI_FeatureTree" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    <WixVariable Id="WixUIBannerBmp" Value="banner.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="dialog.bmp" />
+
+    <!-- Custom properties for options -->
+    <Property Id="INSTALL_SERVICE" Value="1" />
+    <Property Id="AUTO_START_TRAY" Value="1" />
+
+    <!-- Media -->
+    <Media Id="1" Cabinet="BlobStorageDriver.cab" EmbedCab="yes" />
+
+    <!-- Directory structure -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="BlobStorageDriver">
+        <Directory Id="TrayAppFolder" Name="TrayApp" />
+        <Directory Id="ServiceFolder" Name="Service" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Blob Storage Driver" />
+    </StandardDirectory>
+
+    <!-- Tray Application Components -->
+    <ComponentGroup Id="TrayAppComponents" Directory="TrayAppFolder">
+      <Component Id="TrayAppExe" Guid="A1B2C3D4-1111-2222-3333-444455556666">
+        <File Id="BlobStorageDriverWinUI" Source="$(var.BlobStorageDriver.WinUI.TargetDir)BlobStorageDriver.WinUI.exe" KeyPath="yes">
+          <Shortcut Id="TrayAppShortcut" 
+                    Directory="ApplicationProgramsFolder" 
+                    Name="Blob Storage Driver" 
+                    Description="Azure Blob Storage file system driver"
+                    WorkingDirectory="TrayAppFolder"
+                    Advertise="yes" />
+        </File>
+      </Component>
+      
+      <!-- Tray App Dependencies - use heat.exe or HarvestDirectory in real build -->
+      <Component Id="TrayAppDeps" Guid="A1B2C3D4-1111-2222-3333-444455557777">
+        <File Source="$(var.BlobStorageDriver.WinUI.TargetDir)BlobStorageDriver.Common.dll" />
+        <File Source="$(var.BlobStorageDriver.WinUI.TargetDir)BlobStorageDriver.CloudProvider.dll" />
+        <File Source="$(var.BlobStorageDriver.WinUI.TargetDir)BlobStorageDriver.SyncEngine.dll" />
+      </Component>
+      
+      <!-- Auto-start registry entry -->
+      <Component Id="TrayAppAutoStart" Guid="A1B2C3D4-1111-2222-3333-444455558888">
+        <Condition>AUTO_START_TRAY</Condition>
+        <RegistryValue Root="HKLM"
+                       Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+                       Name="BlobStorageDriver"
+                       Type="string"
+                       Value="&quot;[TrayAppFolder]BlobStorageDriver.WinUI.exe&quot; --minimized"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Service Components -->
+    <ComponentGroup Id="ServiceComponents" Directory="ServiceFolder">
+      <Component Id="ServiceExe" Guid="B2C3D4E5-2222-3333-4444-555566667777">
+        <File Id="BlobStorageDriverService" 
+              Source="$(var.BlobStorageDriver.Service.TargetDir)BlobStorageDriver.Service.exe" 
+              KeyPath="yes" />
+        
+        <!-- Windows Service Installation -->
+        <ServiceInstall Id="BlobStorageDriverServiceInstall"
+                        Name="BlobStorageDriver"
+                        DisplayName="Blob Storage Driver Service"
+                        Description="Background synchronization service for Azure Blob Storage"
+                        Type="ownProcess"
+                        Start="auto"
+                        ErrorControl="normal"
+                        Account="LocalSystem" />
+        
+        <ServiceControl Id="BlobStorageDriverServiceControl"
+                        Name="BlobStorageDriver"
+                        Start="install"
+                        Stop="both"
+                        Remove="uninstall"
+                        Wait="yes" />
+      </Component>
+      
+      <!-- Service Dependencies -->
+      <Component Id="ServiceDeps" Guid="B2C3D4E5-2222-3333-4444-555566668888">
+        <File Source="$(var.BlobStorageDriver.Service.TargetDir)BlobStorageDriver.Common.dll" />
+        <File Source="$(var.BlobStorageDriver.Service.TargetDir)BlobStorageDriver.CloudProvider.dll" />
+        <File Source="$(var.BlobStorageDriver.Service.TargetDir)BlobStorageDriver.SyncEngine.dll" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Program Menu Shortcuts -->
+    <ComponentGroup Id="ShortcutComponents" Directory="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcuts" Guid="C3D4E5F6-3333-4444-5555-666677778888">
+        <Shortcut Id="UninstallShortcut"
+                  Name="Uninstall Blob Storage Driver"
+                  Target="[SystemFolder]msiexec.exe"
+                  Arguments="/x [ProductCode]" />
+        <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" 
+                       Key="Software\BlobStorageDriver" 
+                       Name="ShortcutsInstalled" 
+                       Type="integer" 
+                       Value="1" 
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Features -->
+    <Feature Id="TrayApplication" 
+             Title="Tray Application" 
+             Description="System tray application for managing blob storage sync"
+             Level="1"
+             AllowAbsent="no">
+      <ComponentGroupRef Id="TrayAppComponents" />
+      <ComponentGroupRef Id="ShortcutComponents" />
+    </Feature>
+
+    <Feature Id="WindowsService" 
+             Title="Windows Service" 
+             Description="Background synchronization service (for enterprise/server deployments)"
+             Level="1"
+             AllowAbsent="yes">
+      <ComponentGroupRef Id="ServiceComponents" />
+      <Condition Level="0">NOT INSTALL_SERVICE</Condition>
+    </Feature>
+
+    <!-- Custom Actions -->
+    <CustomAction Id="LaunchTrayApp"
+                  Directory="TrayAppFolder"
+                  ExeCommand="[TrayAppFolder]BlobStorageDriver.WinUI.exe --minimized"
+                  Execute="commit"
+                  Impersonate="yes"
+                  Return="asyncNoWait" />
+
+    <InstallExecuteSequence>
+      <Custom Action="LaunchTrayApp" After="InstallFinalize">NOT Installed AND AUTO_START_TRAY</Custom>
+    </InstallExecuteSequence>
+
+  </Package>
+</Wix>
