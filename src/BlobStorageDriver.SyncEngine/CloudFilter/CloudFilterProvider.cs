@@ -12,7 +12,9 @@ public class CloudFilterProvider : IDisposable
 {
     private readonly ILogger<CloudFilterProvider> _logger;
     private readonly CacheSettings _settings;
+#pragma warning disable CS0169 // Field is reserved for future use with Cloud Filter connection
     private IntPtr _connectionKey;
+#pragma warning restore CS0169
     private bool _isRegistered;
     private bool _isDisposed;
 

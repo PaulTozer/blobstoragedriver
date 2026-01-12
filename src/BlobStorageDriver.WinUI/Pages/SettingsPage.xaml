@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="BlobStorageDriver.WinUI.Pages.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <ScrollViewer Padding="24,16">
+        <StackPanel Spacing="16" MaxWidth="800">
+            <TextBlock Text="Settings" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,8"/>
+            
+            <!-- Azure Connection Section -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Azure Connection" FontSize="18" FontWeight="SemiBold"/>
+                    
+                    <ComboBox x:Name="AuthTypeCombo" Header="Authentication Type" SelectionChanged="AuthType_SelectionChanged" Width="300">
+                        <ComboBoxItem Content="Connection String" Tag="ConnectionString"/>
+                        <ComboBoxItem Content="Azure AD (Interactive)" Tag="AzureAD"/>
+                        <ComboBoxItem Content="Managed Identity" Tag="ManagedIdentity"/>
+                    </ComboBox>
+                    
+                    <TextBox x:Name="AccountNameBox" Header="Storage Account Name" PlaceholderText="mystorageaccount" Width="400"/>
+                    <TextBox x:Name="ContainerNameBox" Header="Container Name" PlaceholderText="mycontainer" Width="400"/>
+                    <PasswordBox x:Name="ConnectionStringBox" Header="Connection String" PlaceholderText="DefaultEndpointsProtocol=https;..." Width="500"/>
+                    
+                    <Button x:Name="TestConnectionBtn" Content="Test Connection" Click="TestConnection_Click"/>
+                </StackPanel>
+            </Border>
+            
+            <!-- Sync Settings Section -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Sync Settings" FontSize="18" FontWeight="SemiBold"/>
+                    
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                        <TextBox Grid.Row="0" Grid.Column="0" x:Name="LocalPathBox" Header="Local Sync Folder" PlaceholderText="C:\BlobSync" IsReadOnly="True"/>
+                        <Button Grid.Row="0" Grid.Column="1" x:Name="BrowseFolderBtn" Content="Browse" Click="BrowseFolder_Click" VerticalAlignment="Bottom" Margin="8,0,0,0"/>
+                    </Grid>
+                    
+                    <NumberBox x:Name="SyncIntervalBox" Header="Sync Interval (seconds)" Minimum="10" Maximum="3600" Value="30" SpinButtonPlacementMode="Compact"/>
+                    
+                    <ToggleSwitch x:Name="SyncOnStartupToggle" Header="Sync on Startup" IsOn="True"/>
+                    <ToggleSwitch x:Name="AutoResolveToggle" Header="Auto-resolve Conflicts" IsOn="False"/>
+                </StackPanel>
+            </Border>
+            
+            <!-- Integration Section -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Integration" FontSize="18" FontWeight="SemiBold"/>
+                    
+                    <ComboBox x:Name="IntegrationModeCombo" Header="Integration Mode" Width="300" SelectionChanged="IntegrationMode_SelectionChanged">
+                        <ComboBoxItem Content="Local Folder Sync" Tag="LocalFolder"/>
+                        <ComboBoxItem Content="Shell Namespace (Navigation Pane)" Tag="ShellNamespace"/>
+                        <ComboBoxItem Content="Virtual Drive (Drive Letter)" Tag="VirtualDrive"/>
+                    </ComboBox>
+                    
+                    <StackPanel x:Name="DriveLetterPanel" Orientation="Horizontal" Spacing="12">
+                        <ComboBox x:Name="DriveLetterCombo" Header="Drive Letter" Width="100">
+                            <ComboBoxItem Content="D:"/>
+                            <ComboBoxItem Content="E:"/>
+                            <ComboBoxItem Content="F:"/>
+                            <ComboBoxItem Content="G:"/>
+                            <ComboBoxItem Content="H:"/>
+                            <ComboBoxItem Content="I:"/>
+                            <ComboBoxItem Content="J:"/>
+                            <ComboBoxItem Content="K:"/>
+                            <ComboBoxItem Content="L:"/>
+                            <ComboBoxItem Content="M:"/>
+                            <ComboBoxItem Content="N:"/>
+                            <ComboBoxItem Content="O:"/>
+                            <ComboBoxItem Content="P:"/>
+                            <ComboBoxItem Content="Q:"/>
+                            <ComboBoxItem Content="R:"/>
+                            <ComboBoxItem Content="S:"/>
+                            <ComboBoxItem Content="T:"/>
+                            <ComboBoxItem Content="U:"/>
+                            <ComboBoxItem Content="V:"/>
+                            <ComboBoxItem Content="W:"/>
+                            <ComboBoxItem Content="X:"/>
+                            <ComboBoxItem Content="Y:"/>
+                            <ComboBoxItem Content="Z:"/>
+                        </ComboBox>
+                        <TextBox x:Name="VolumeLabelBox" Header="Volume Label" PlaceholderText="Azure Blob Storage" Width="250"/>
+                    </StackPanel>
+                    
+                    <ToggleSwitch x:Name="ShowInNavPaneToggle" Header="Show in Navigation Pane"/>
+                    <ToggleSwitch x:Name="ShowStatusOverlaysToggle" Header="Show Status Overlay Icons" IsOn="True"/>
+                    
+                    <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}" Margin="0,8"/>
+                    
+                    <ToggleSwitch x:Name="StartWithWindowsToggle" Header="Start with Windows"/>
+                    <ToggleSwitch x:Name="MinimizeToTrayToggle" Header="Minimize to System Tray" IsOn="True"/>
+                </StackPanel>
+            </Border>
+            
+            <!-- Actions -->
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button x:Name="SaveBtn" Content="Save Settings" Style="{StaticResource AccentButtonStyle}" Click="Save_Click"/>
+                <Button x:Name="ResetBtn" Content="Reset to Defaults" Click="Reset_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

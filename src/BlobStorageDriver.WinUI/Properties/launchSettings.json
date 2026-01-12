@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "BlobStorageDriver.WinUI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "BlobStorageDriver.WinUI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

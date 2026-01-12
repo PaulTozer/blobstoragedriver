@@ -24,6 +24,7 @@ public class VirtualDriveManager : IDisposable
     private DokanInstance? _dokanInstance;
     private Task? _mountTask;
     private CancellationTokenSource? _mountCts;
+    private FileSystemWatcher? _fileWatcher;
     private bool _isMounted;
     private readonly object _mountLock = new();
 
@@ -133,6 +134,9 @@ public class VirtualDriveManager : IDisposable
             {
                 _isMounted = true;
             }
+
+            // Start file watcher to track activity
+            StartFileWatcher(mirrorRoot);
 
             _logger.LogInformation("Successfully mounted Azure Blob Storage at {MountPoint}", mountPoint);
             return true;
@@ -247,8 +251,136 @@ public class VirtualDriveManager : IDisposable
             UnmountAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         }
         
+        StopFileWatcher();
         _mountCts?.Dispose();
         _dokanInstance?.Dispose();
         _dokan?.Dispose();
     }
+    
+    #region File Activity Tracking
+    
+    private void StartFileWatcher(string watchPath)
+    {
+        if (!Directory.Exists(watchPath))
+            return;
+            
+        _fileWatcher = new FileSystemWatcher(watchPath)
+        {
+            NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | 
+                           NotifyFilters.LastWrite | NotifyFilters.Size,
+            IncludeSubdirectories = true,
+            EnableRaisingEvents = true
+        };
+        
+        _fileWatcher.Created += OnFileCreated;
+        _fileWatcher.Changed += OnFileChanged;
+        _fileWatcher.Deleted += OnFileDeleted;
+        _fileWatcher.Renamed += OnFileRenamed;
+        
+        _logger.LogInformation("File activity watcher started for: {Path}", watchPath);
+    }
+    
+    private void StopFileWatcher()
+    {
+        if (_fileWatcher != null)
+        {
+            _fileWatcher.EnableRaisingEvents = false;
+            _fileWatcher.Created -= OnFileCreated;
+            _fileWatcher.Changed -= OnFileChanged;
+            _fileWatcher.Deleted -= OnFileDeleted;
+            _fileWatcher.Renamed -= OnFileRenamed;
+            _fileWatcher.Dispose();
+            _fileWatcher = null;
+        }
+    }
+    
+    private void OnFileCreated(object sender, FileSystemEventArgs e)
+    {
+        if (ShouldSkipFile(e.FullPath)) return;
+        
+        var isDirectory = Directory.Exists(e.FullPath);
+        var relativePath = GetRelativePath(e.FullPath);
+        
+        _logger.LogDebug("{Type} created: {Path}", isDirectory ? "Folder" : "File", relativePath);
+        
+        FileActivity?.Invoke(this, new FileActivityEventArgs(
+            FileActivityType.Created,
+            relativePath,
+            isDirectory,
+            $"{(isDirectory ? "Folder" : "File")} created"));
+    }
+    
+    private void OnFileChanged(object sender, FileSystemEventArgs e)
+    {
+        if (ShouldSkipFile(e.FullPath)) return;
+        if (Directory.Exists(e.FullPath)) return; // Skip directory change events
+        
+        var relativePath = GetRelativePath(e.FullPath);
+        
+        _logger.LogDebug("File modified: {Path}", relativePath);
+        
+        FileActivity?.Invoke(this, new FileActivityEventArgs(
+            FileActivityType.Modified,
+            relativePath,
+            false,
+            "File modified"));
+    }
+    
+    private void OnFileDeleted(object sender, FileSystemEventArgs e)
+    {
+        if (ShouldSkipFile(e.FullPath)) return;
+        
+        var relativePath = GetRelativePath(e.FullPath);
+        
+        _logger.LogDebug("Deleted: {Path}", relativePath);
+        
+        FileActivity?.Invoke(this, new FileActivityEventArgs(
+            FileActivityType.Deleted,
+            relativePath,
+            false, // Can't tell if it was a directory after deletion
+            "Deleted"));
+    }
+    
+    private void OnFileRenamed(object sender, RenamedEventArgs e)
+    {
+        if (ShouldSkipFile(e.FullPath)) return;
+        
+        var isDirectory = Directory.Exists(e.FullPath);
+        var oldRelativePath = GetRelativePath(e.OldFullPath);
+        var newRelativePath = GetRelativePath(e.FullPath);
+        
+        _logger.LogDebug("Renamed: {OldPath} -> {NewPath}", oldRelativePath, newRelativePath);
+        
+        FileActivity?.Invoke(this, new FileActivityEventArgs(
+            FileActivityType.Renamed,
+            newRelativePath,
+            isDirectory,
+            $"Renamed from {oldRelativePath}"));
+    }
+    
+    private string GetRelativePath(string fullPath)
+    {
+        var syncFolder = _config.Cache.LocalSyncFolder;
+        if (fullPath.StartsWith(syncFolder, StringComparison.OrdinalIgnoreCase))
+        {
+            var relative = fullPath.Substring(syncFolder.Length);
+            return relative.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+        return fullPath;
+    }
+    
+    private static bool ShouldSkipFile(string path)
+    {
+        var fileName = Path.GetFileName(path);
+        
+        // Skip system and temporary files
+        return fileName.StartsWith("~$") ||
+               fileName.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase) ||
+               fileName.Equals("desktop.ini", StringComparison.OrdinalIgnoreCase) ||
+               fileName.Equals("Thumbs.db", StringComparison.OrdinalIgnoreCase) ||
+               fileName.Equals(".DS_Store", StringComparison.OrdinalIgnoreCase) ||
+               path.Contains("System Volume Information");
+    }
+    
+    #endregion
 }

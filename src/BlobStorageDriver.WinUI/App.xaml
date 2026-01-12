@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Application
+    x:Class="BlobStorageDriver.WinUI.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Azure brand colors -->
+            <SolidColorBrush x:Key="AzurePrimaryBrush" Color="#0078D4"/>
+            <SolidColorBrush x:Key="AzureSecondaryBrush" Color="#50AAE6"/>
+            <SolidColorBrush x:Key="AzureHighlightBrush" Color="#80C8F0"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

@@ -23,7 +23,6 @@ public class Program
                     "service-.log"),
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: 30)
-            .WriteTo.EventLog("BlobStorageDriver", manageEventSource: true)
             .CreateLogger();
 
         try

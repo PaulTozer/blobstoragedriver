@@ -1,0 +1,193 @@
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.Extensions.DependencyInjection;
+using BlobStorageDriver.WinUI.ViewModels;
+using BlobStorageDriver.Common.Configuration;
+using Windows.Storage.Pickers;
+using System;
+using WinRT.Interop;
+
+namespace BlobStorageDriver.WinUI.Pages;
+
+public sealed partial class SettingsPage : Page
+{
+    private SettingsViewModel? _viewModel;
+    private AppConfiguration? _config;
+    
+    public SettingsPage()
+    {
+        this.InitializeComponent();
+        
+        _viewModel = App.Services.GetService<SettingsViewModel>();
+        _config = App.Services.GetService<AppConfiguration>();
+        
+        LoadSettings();
+    }
+    
+    private void LoadSettings()
+    {
+        if (_config == null) return;
+        
+        // Azure settings
+        var authIndex = _config.AzureBlob.AuthType switch
+        {
+            AuthenticationType.ConnectionString => 0,
+            AuthenticationType.AccountKey => 1,
+            AuthenticationType.SasToken => 2,
+            AuthenticationType.EntraIdInteractive => 3,
+            AuthenticationType.EntraIdDefault => 4,
+            _ => 3
+        };
+        AuthTypeCombo.SelectedIndex = authIndex;
+        
+        ConnectionStringBox.Text = _config.AzureBlob.ConnectionString ?? "";
+        AccountNameBox.Text = _config.AzureBlob.AccountName ?? "";
+        ContainerNameBox.Text = _config.AzureBlob.ContainerName ?? "";
+        AccountKeyBox.Password = _config.AzureBlob.AccountKey ?? "";
+        SasTokenBox.Text = _config.AzureBlob.SasToken ?? "";
+        TenantIdBox.Text = _config.AzureBlob.TenantId ?? "";
+        ClientIdBox.Text = _config.AzureBlob.ClientId ?? "";
+        
+        // Sync settings
+        LocalFolderBox.Text = _config.Cache.LocalSyncFolder ?? "";
+        SyncIntervalBox.Value = _config.Sync.SyncIntervalSeconds / 60;
+        RealTimeSyncToggle.IsOn = _config.Sync.EnableRealTimeSync;
+        
+        // Integration settings
+        var modeIndex = _config.Integration.Mode switch
+        {
+            IntegrationMode.LocalFolder => 0,
+            IntegrationMode.VirtualDrive => 1,
+            IntegrationMode.ShellNamespace => 2,
+            _ => 0
+        };
+        IntegrationModeCombo.SelectedIndex = modeIndex;
+        
+        var driveIndex = (_config.Integration.DriveLetter ?? "Z").ToUpper() switch
+        {
+            "W" => 0,
+            "X" => 1,
+            "Y" => 2,
+            "Z" => 3,
+            _ => 3
+        };
+        DriveLetterCombo.SelectedIndex = driveIndex;
+        VolumeLabelBox.Text = _config.Integration.VolumeLabel ?? "Azure Blob Storage";
+        
+        // App settings
+        StartWithWindowsToggle.IsOn = _config.Ui.StartWithWindows;
+        StartMinimizedToggle.IsOn = _config.Ui.StartMinimized;
+        ShowNotificationsToggle.IsOn = _config.Ui.ShowNotifications;
+        
+        UpdateAuthFieldVisibility();
+    }
+    
+    private void AuthType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        UpdateAuthFieldVisibility();
+    }
+    
+    private void UpdateAuthFieldVisibility()
+    {
+        if (AuthTypeCombo.SelectedItem is ComboBoxItem item)
+        {
+            var tag = item.Tag?.ToString();
+            
+            ConnectionStringBox.Visibility = tag == "ConnectionString" ? Visibility.Visible : Visibility.Collapsed;
+            AccountNameBox.Visibility = tag != "ConnectionString" ? Visibility.Visible : Visibility.Collapsed;
+            AccountKeyBox.Visibility = tag == "AccountKey" ? Visibility.Visible : Visibility.Collapsed;
+            SasTokenBox.Visibility = tag == "SasToken" ? Visibility.Visible : Visibility.Collapsed;
+            TenantIdBox.Visibility = tag?.StartsWith("EntraId") == true ? Visibility.Visible : Visibility.Collapsed;
+            ClientIdBox.Visibility = tag?.StartsWith("EntraId") == true ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+    
+    private async void BrowseFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var picker = new FolderPicker();
+        picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+        picker.FileTypeFilter.Add("*");
+        
+        // Initialize with window handle
+        var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
+        InitializeWithWindow.Initialize(picker, hwnd);
+        
+        var folder = await picker.PickSingleFolderAsync();
+        if (folder != null)
+        {
+            LocalFolderBox.Text = folder.Path;
+        }
+    }
+    
+    private async void TestConnection_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = "Testing Connection",
+            Content = new ProgressRing { IsActive = true },
+            XamlRoot = this.XamlRoot
+        };
+        
+        // TODO: Implement actual connection test
+        await dialog.ShowAsync();
+    }
+    
+    private void Reset_Click(object sender, RoutedEventArgs e)
+    {
+        LoadSettings();
+        SaveStatusText.Text = "Settings reset";
+    }
+    
+    private void Save_Click(object sender, RoutedEventArgs e)
+    {
+        if (_config == null) return;
+        
+        // Save Azure settings
+        var authType = (AuthTypeCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() switch
+        {
+            "ConnectionString" => AuthenticationType.ConnectionString,
+            "AccountKey" => AuthenticationType.AccountKey,
+            "SasToken" => AuthenticationType.SasToken,
+            "EntraIdInteractive" => AuthenticationType.EntraIdInteractive,
+            "EntraIdDefault" => AuthenticationType.EntraIdDefault,
+            _ => AuthenticationType.EntraIdInteractive
+        };
+        
+        _config.AzureBlob.AuthType = authType;
+        _config.AzureBlob.ConnectionString = ConnectionStringBox.Text;
+        _config.AzureBlob.AccountName = AccountNameBox.Text;
+        _config.AzureBlob.ContainerName = ContainerNameBox.Text;
+        _config.AzureBlob.AccountKey = AccountKeyBox.Password;
+        _config.AzureBlob.SasToken = SasTokenBox.Text;
+        _config.AzureBlob.TenantId = TenantIdBox.Text;
+        _config.AzureBlob.ClientId = ClientIdBox.Text;
+        
+        // Save sync settings
+        _config.Cache.LocalSyncFolder = LocalFolderBox.Text;
+        _config.Sync.SyncIntervalSeconds = (int)(SyncIntervalBox.Value * 60);
+        _config.Sync.EnableRealTimeSync = RealTimeSyncToggle.IsOn;
+        
+        // Save integration settings
+        var mode = (IntegrationModeCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() switch
+        {
+            "LocalFolder" => IntegrationMode.LocalFolder,
+            "VirtualDrive" => IntegrationMode.VirtualDrive,
+            "ShellNamespace" => IntegrationMode.ShellNamespace,
+            _ => IntegrationMode.LocalFolder
+        };
+        
+        _config.Integration.Mode = mode;
+        _config.Integration.DriveLetter = ((DriveLetterCombo.SelectedItem as ComboBoxItem)?.Content?.ToString())?[0].ToString() ?? "Z";
+        _config.Integration.VolumeLabel = VolumeLabelBox.Text;
+        
+        // Save app settings
+        _config.Ui.StartWithWindows = StartWithWindowsToggle.IsOn;
+        _config.Ui.StartMinimized = StartMinimizedToggle.IsOn;
+        _config.Ui.ShowNotifications = ShowNotificationsToggle.IsOn;
+        
+        // Save to file
+        _config.Save();
+        
+        SaveStatusText.Text = "Settings saved successfully";
+    }
+}

@@ -228,12 +228,12 @@ public class BlobFileSystem : IDokanOperations
         try
         {
             var path = NormalizePath(fileName);
-            _logger.LogDebug("Cleanup: {Path}, DeleteOnClose: {Delete}", path, info.DeleteOnClose);
+            _logger.LogDebug("Cleanup: {Path}, DeletePending: {Delete}", path, info.DeletePending);
             
             // Clear context
             info.Context = null;
             
-            if (info.DeleteOnClose)
+            if (info.DeletePending)
             {
                 try
                 {
@@ -297,7 +297,7 @@ public class BlobFileSystem : IDokanOperations
             info.Context = null;
             
             // Skip directories
-            if (info.IsDirectory || info.DeleteOnClose)
+            if (info.IsDirectory || info.DeletePending)
                 return;
                 
             var localPath = GetLocalCachePath(path);

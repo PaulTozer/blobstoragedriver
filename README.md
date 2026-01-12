@@ -200,6 +200,74 @@ Logs are stored in:
 - Managed Identity is recommended for Azure-hosted environments
 - All communication with Azure uses HTTPS
 
+## Virtual File System Implementations
+
+This project supports **two different virtual file system implementations**:
+
+### 1. Dokan-based Implementation (Default)
+
+Located in `VirtualDrive/` folder. Uses the [Dokan](https://dokan-dev.github.io/) user-mode file system driver.
+
+**Pros:**
+- Creates an actual drive letter (e.g., `Z:\`)
+- Works on Windows 7+
+- More flexible - full control over file system behavior
+
+**Cons:**
+- Requires Dokan driver installation
+- Third-party dependency
+- May conflict with other Dokan applications
+
+**Usage:**
+```csharp
+var driveManager = new VirtualDriveManager(config, cloudProvider, cacheManager);
+await driveManager.MountAsync("Z:");
+```
+
+### 2. Cloud Filter API Implementation (Native)
+
+Located in `CloudFilter/` folder. Uses the native Windows Cloud Files API (cfapi.dll).
+
+**Pros:**
+- Native Windows 10+ API (no third-party drivers)
+- Same technology used by OneDrive, Dropbox, iCloud
+- Better Shell integration (progress indicators, status icons, context menus)
+- Automatic placeholder file management
+- Appears in File Explorer navigation pane
+- **Optional drive letter mapping** for legacy application compatibility
+
+**Cons:**
+- Requires Windows 10 version 1709 (Fall Creators Update) or later
+- More complex implementation
+
+**Usage:**
+```csharp
+var driveManager = new CloudFilterDriveManager(config, cloudProvider, cacheManager);
+
+// Without drive letter (appears in File Explorer navigation pane)
+await driveManager.ActivateAsync();
+
+// With drive letter (e.g., Z:\) - no Dokan required!
+await driveManager.ActivateAsync('Z');
+
+// Map drive letter after activation
+driveManager.MapDriveLetter('X');
+```
+
+### Choosing an Implementation
+
+| Feature | Dokan | Cloud Filter |
+|---------|-------|--------------|
+| Drive Letter | ✅ Yes (Z:\) | ✅ Optional (via folder mapping) |
+| Windows Version | Windows 7+ | Windows 10 1709+ |
+| Third-Party Driver | ✅ Required | ❌ Not needed |
+| Shell Integration | Basic | Advanced (OneDrive-style) |
+| Progress Indicators | Manual | Automatic |
+| Status Icons | Manual | Automatic |
+| Right-Click Menu | Manual | Automatic |
+
+For detailed implementation documentation, see [CloudFilter/README.md](src/BlobStorageDriver.SyncEngine/CloudFilter/README.md).
+
 ## Development
 
 ### Project Structure
@@ -209,6 +277,8 @@ src/
 ├── BlobStorageDriver.Common/        # Shared models and configuration
 ├── BlobStorageDriver.CloudProvider/ # Azure Blob Storage client
 ├── BlobStorageDriver.SyncEngine/    # Sync logic and cache management
+│   ├── VirtualDrive/                # Dokan-based virtual drive (drive letter)
+│   └── CloudFilter/                 # Native Cloud Filter API (sync root folder)
 ├── BlobStorageDriver.TrayApp/       # WPF system tray application
 └── BlobStorageDriver.Service/       # Windows service
 ```

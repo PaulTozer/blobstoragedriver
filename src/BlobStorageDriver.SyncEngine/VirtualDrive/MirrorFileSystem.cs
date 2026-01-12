@@ -98,7 +98,7 @@ public class MirrorFileSystem : IDokanOperations
     {
         try
         {
-            if (info.DeleteOnClose)
+            if (info.DeletePending)
             {
                 var path = GetPath(fileName);
                 if (info.IsDirectory)

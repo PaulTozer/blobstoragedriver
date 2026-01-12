@@ -110,8 +110,10 @@ public class AzureBlobStorageProvider : ICloudStorageProvider
         try
         {
             await foreach (var item in _containerClient.GetBlobsByHierarchyAsync(
-                prefix: prefix,
+                traits: BlobTraits.Metadata,
+                states: BlobStates.None,
                 delimiter: "/",
+                prefix: prefix,
                 cancellationToken: cancellationToken))
             {
                 if (item.IsPrefix)
@@ -177,7 +179,7 @@ public class AzureBlobStorageProvider : ICloudStorageProvider
             if (!exists)
             {
                 // Check if it's a directory (has blobs with this prefix)
-                await foreach (var _ in _containerClient.GetBlobsAsync(prefix: path.TrimEnd('/') + "/", cancellationToken: cancellationToken))
+                await foreach (var _ in _containerClient.GetBlobsAsync(traits: BlobTraits.None, states: BlobStates.None, prefix: path.TrimEnd('/') + "/", cancellationToken: cancellationToken))
                 {
                     var dirName = path.TrimEnd('/');
                     if (dirName.Contains('/'))
@@ -368,7 +370,7 @@ public class AzureBlobStorageProvider : ICloudStorageProvider
             {
                 // Delete all blobs with this prefix (directory deletion)
                 var prefix = path.TrimEnd('/') + "/";
-                await foreach (var blob in _containerClient.GetBlobsAsync(prefix: prefix, cancellationToken: cancellationToken))
+                await foreach (var blob in _containerClient.GetBlobsAsync(traits: BlobTraits.None, states: BlobStates.None, prefix: prefix, cancellationToken: cancellationToken))
                 {
                     await _containerClient.DeleteBlobIfExistsAsync(blob.Name, cancellationToken: cancellationToken);
                 }
@@ -422,7 +424,7 @@ public class AzureBlobStorageProvider : ICloudStorageProvider
             return true;
             
         // Check if it's a directory
-        await foreach (var _ in _containerClient.GetBlobsAsync(prefix: path.TrimEnd('/') + "/", cancellationToken: cancellationToken))
+        await foreach (var _ in _containerClient.GetBlobsAsync(traits: BlobTraits.None, states: BlobStates.None, prefix: path.TrimEnd('/') + "/", cancellationToken: cancellationToken))
         {
             return true;
         }
@@ -440,7 +442,7 @@ public class AzureBlobStorageProvider : ICloudStorageProvider
         
         try
         {
-            var pageable = _containerClient.GetBlobsAsync(cancellationToken: cancellationToken);
+            var pageable = _containerClient.GetBlobsAsync(traits: BlobTraits.Metadata, states: BlobStates.None, prefix: "", cancellationToken: cancellationToken);
             
             await foreach (var blob in pageable)
             {
