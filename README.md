@@ -49,7 +49,8 @@ A Windows application that mounts Azure Blob Storage as a local file system with
 ## Prerequisites
 
 - Windows 10 version 1709 (Fall Creators Update) or later
-- .NET 8.0 Runtime
+- .NET 10.0 Runtime
+- Windows App SDK (for WinUI tray application)
 - Azure Blob Storage account with a container
 
 ## Installation
@@ -70,8 +71,8 @@ cd blobstoragedriver
 # Build the solution
 dotnet build -c Release
 
-# Run the tray application
-dotnet run --project src/BlobStorageDriver.TrayApp
+# Run the WinUI tray application
+dotnet run --project src/BlobStorageDriver.WinUI
 ```
 
 ## Configuration
@@ -279,7 +280,7 @@ src/
 ├── BlobStorageDriver.SyncEngine/    # Sync logic and cache management
 │   ├── VirtualDrive/                # Dokan-based virtual drive (drive letter)
 │   └── CloudFilter/                 # Native Cloud Filter API (sync root folder)
-├── BlobStorageDriver.TrayApp/       # WPF system tray application
+├── BlobStorageDriver.WinUI/         # WinUI 3 system tray application
 └── BlobStorageDriver.Service/       # Windows service
 ```
 
